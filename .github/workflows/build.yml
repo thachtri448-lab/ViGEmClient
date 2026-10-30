@@ -1,0 +1,43 @@
+
+name: Build ViGEmClient
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Compile x64 DLL
+        run: >
+          msbuild ViGEmClient.sln
+          /m
+          /p:Configuration=Release_DLL
+          /p:Platform=x64
+          /p:PlatformToolset=v143
+
+      - name: Verify output
+        shell: pwsh
+        run: |
+          $dll = "bin\release\x64\ViGEmClient.dll"
+          if (!(Test-Path $dll)) {
+            Write-Error "DLL was not generated!"
+            exit 1
+          }
+          Get-Item $dll | Format-List Name, Length, FullName
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ViGEmClient-x64
+          path: bin/release/x64/ViGEmClient.dll
+          if-no-files-found: error
